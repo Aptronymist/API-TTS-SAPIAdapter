@@ -597,13 +597,13 @@ void CTTSEngine::SetupSynthesizerEvents(ULONGLONG interests)
     };
     m_synthesizerStarted.store(false, std::memory_order_relaxed);
 
-    if (interests & SPEI_TTS_BOOKMARK)
+    if (interests & SVEBookmark)
         m_synthesizer->BookmarkReached += [this](const SpeechSynthesisBookmarkEventArgs& arg)
         {
             OnBookmark(arg.AudioOffset, UTF8ToWString(arg.Text));
         };
 
-    if (interests & (SPEI_WORD_BOUNDARY | SPEI_SENTENCE_BOUNDARY))
+    if (interests & (SVEWordBoundary | SVESentenceBoundary))
         m_synthesizer->WordBoundary += [this](const SpeechSynthesisWordBoundaryEventArgs& arg)
         {
             if (arg.BoundaryType == SpeechSynthesisBoundaryType::Punctuation)
@@ -612,7 +612,7 @@ void CTTSEngine::SetupSynthesizerEvents(ULONGLONG interests)
                 arg.BoundaryType == SpeechSynthesisBoundaryType::Sentence ? SPEI_SENTENCE_BOUNDARY : SPEI_WORD_BOUNDARY);
         };
 
-    if (interests & SPEI_VISEME)
+    if (interests & SVEViseme)
         m_synthesizer->VisemeReceived += [this](const SpeechSynthesisVisemeEventArgs& arg)
         {
             OnViseme(arg.AudioOffset, arg.VisemeId);
@@ -632,14 +632,14 @@ void CTTSEngine::ClearSynthesizerEvents()
 void CTTSEngine::SetupRestAPIEvents(ULONGLONG interests)
 {
     m_restApi->AudioReceivedCallback = std::bind_front(&CTTSEngine::OnAudioData, this);
-    if (interests & SPEI_TTS_BOOKMARK)
+    if (interests & SVEBookmark)
         m_restApi->BookmarkCallback = [this](auto a, auto b) { OnBookmark(a, UTF8ToWString(b)); };
-    if ((interests & SPEI_WORD_BOUNDARY)
-        || (m_isEdgeVoice && (interests & SPEI_TTS_BOOKMARK))) // Edge voice's bookmarks require word boundary events
+    if ((interests & SVEWordBoundary)
+        || (m_isEdgeVoice && (interests & SVEBookmark))) // Edge voice's bookmarks require word boundary events
         m_restApi->WordBoundaryCallback = [this](auto a, auto b, auto c) { OnBoundary(a, b, c, SPEI_WORD_BOUNDARY); };
-    if (interests & SPEI_SENTENCE_BOUNDARY)
+    if (interests & SVESentenceBoundary)
         m_restApi->SentenceBoundaryCallback = [this](auto a, auto b, auto c) { OnBoundary(a, b, c, SPEI_SENTENCE_BOUNDARY); };
-    if (interests & SPEI_VISEME)
+    if (interests & SVEViseme)
         m_restApi->VisemeCallback = std::bind_front(&CTTSEngine::OnViseme, this);
 }
 
